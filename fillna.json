@@ -1,0 +1,26 @@
+{
+  "name": "Fill NA",
+  "id_name": "fillna",
+  "category" : "Invisible Institute",
+  "parameters": [
+    {
+      "name" : "Method",
+      "id_name" : "method",
+      "type" : "menu",
+      "menu_items" : "Forward|Backward",
+      "default": "0"
+    },
+    {
+      "name": "Select Columns",
+      "id_name": "colselect",
+      "type": "custom",
+      "ui-only": true
+    },
+    {
+      "name": "Column Names",
+      "id_name": "colnames",
+      "type": "string",
+      "visible": true
+    }
+  ]
+}
