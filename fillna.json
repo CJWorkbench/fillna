@@ -1,5 +1,5 @@
 {
-  "name": "Fill NA",
+  "name": "fillna",
   "id_name": "fillna",
   "category" : "Invisible Institute",
   "parameters": [
