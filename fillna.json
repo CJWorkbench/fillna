@@ -2,6 +2,7 @@
   "name": "fillna",
   "id_name": "fillna",
   "category" : "Invisible Institute",
+  "description": "Fill empty fields with the content of previous or subsequent rows.",
   "parameters": [
     {
       "name" : "Method",
