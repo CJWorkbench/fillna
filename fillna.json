@@ -1,5 +1,5 @@
 {
-  "name": "fillna",
+  "name": "Fill NA",
   "id_name": "fillna",
   "category" : "Invisible Institute",
   "description": "Fill empty fields with the content of previous or subsequent rows.",
