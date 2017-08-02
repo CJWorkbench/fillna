@@ -1,14 +1,14 @@
 {
-  "name": "Fill NA",
+  "name": "Fill Empty Cell",
   "id_name": "fillna",
-  "category" : "Invisible Institute",
-  "description": "Fill empty fields with the content of previous or subsequent rows.",
+  "category" : "Edit",
+  "description": "Fill empty cells in specific columns with adjacent values.",
   "parameters": [
     {
-      "name" : "Method",
+      "name" : "Fill method",
       "id_name" : "method",
       "type" : "menu",
-      "menu_items" : "Forward|Backward",
+      "menu_items" : "Top to bottom|Bottom up",
       "default": "0"
     },
     {
