@@ -1,14 +1,14 @@
 {
-  "name": "Fill Empty Cell",
+  "name": "Fill",
   "id_name": "fillna",
   "category" : "Edit",
   "description": "Fill empty cells in specific columns with adjacent values.",
   "parameters": [
     {
-      "name" : "Fill method",
+      "name" : "Direction",
       "id_name" : "method",
       "type" : "menu",
-      "menu_items" : "Top to bottom|Bottom up",
+      "menu_items" : "Down|Up",
       "default": "0"
     },
     {
