@@ -1,5 +1,5 @@
 {
-  "name": "Fill",
+  "name": "Fill Down",
   "id_name": "fillna",
   "category" : "Edit",
   "description": "Fill empty cells in specific columns with adjacent values.",
