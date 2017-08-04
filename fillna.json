@@ -2,6 +2,7 @@
   "name": "Fill Down",
   "id_name": "fillna",
   "category" : "Edit",
+  "icon": "edit",
   "description": "Fill empty cells in specific columns with adjacent values.",
   "parameters": [
     {
