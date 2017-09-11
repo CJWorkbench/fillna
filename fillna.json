@@ -1,5 +1,5 @@
 {
-  "name": "Fill Down",
+  "name": "Fill Empty Cells",
   "id_name": "fillna",
   "category" : "Edit",
   "icon": "edit",
@@ -22,7 +22,7 @@
       "name": "Column Names",
       "id_name": "colnames",
       "type": "string",
-      "visible": true
+      "visible": false
     }
   ]
 }
