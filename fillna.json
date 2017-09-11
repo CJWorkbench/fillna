@@ -16,6 +16,7 @@
       "name": "Select Columns",
       "id_name": "colselect",
       "type": "custom",
+      "visible": true,
       "ui-only": true
     },
     {
