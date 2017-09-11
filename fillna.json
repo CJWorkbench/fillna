@@ -16,14 +16,13 @@
       "name": "Select Columns",
       "id_name": "colselect",
       "type": "custom",
-      "visible": true,
       "ui-only": true
     },
     {
       "name": "Column Names",
       "id_name": "colnames",
       "type": "string",
-      "visible": false
+      "visible": true
     }
   ]
 }
