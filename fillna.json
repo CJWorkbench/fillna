@@ -15,8 +15,7 @@
     {
       "name": "Select Columns",
       "id_name": "colselect",
-      "type": "custom",
-      "visible": true,
+      "type": "multicolumn",
       "ui-only": true
     },
     {
