@@ -21,7 +21,7 @@ class Importable:
                 return None
 
         method = wf_module.get_param_menu_string('method')
-        if method == 'Forward':
+        if method == 'Down':
             table[cols] = table[cols].fillna(axis = 0, method='ffill')
         else:
             table[cols] = table[cols].fillna(axis=0, method='bfill')
