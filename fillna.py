@@ -18,7 +18,7 @@ class Importable:
         for c in cols:
             if not c in table.columns:
                 wf_module.set_error('There is no column named %s' % c)
-                return None
+                return table
 
         method = wf_module.get_param_menu_string('method')
         if method == 'Down':
