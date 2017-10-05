@@ -1,5 +1,5 @@
 {
-  "name": "Fill Empty Cells",
+  "name": "Fill empty cells",
   "id_name": "fillna",
   "category" : "Analyse",
   "icon": "edit",
