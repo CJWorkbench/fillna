@@ -1,7 +1,7 @@
 {
   "name": "Fill empty cells",
   "id_name": "fillna",
-  "category" : "Analyse",
+  "category" : "Prepare",
   "icon": "edit",
   "description": "Fill empty cells in specific columns with adjacent values.",
   "help_url":"modules/analyse/fill-empty-cells",
