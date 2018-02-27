@@ -4,7 +4,7 @@
   "category" : "Prepare",
   "icon": "edit",
   "description": "Fill empty cells in specific columns with adjacent values.",
-  "help_url":"modules/analyse/fill-empty-cells",
+  "help_url":"modules/prepare/fill-empty-cells",
   "parameters": [
     {
       "name" : "Direction",
