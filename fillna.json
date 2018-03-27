@@ -1,10 +1,10 @@
 {
   "name": "Fill empty cells",
   "id_name": "fillna",
-  "category" : "Prepare",
+  "category" : "Clean",
   "icon": "edit",
   "description": "Fill empty cells in specific columns with adjacent values.",
-  "help_url":"modules/prepare/fill-empty-cells",
+  "help_url":"modules/clean/fill-empty-cells",
   "parameters": [
     {
       "name" : "Direction",
