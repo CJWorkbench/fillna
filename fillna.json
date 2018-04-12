@@ -7,11 +7,30 @@
   "help_url":"modules/clean/fill-empty-cells",
   "parameters": [
     {
-      "name" : "Direction",
+      "name": "",
+      "id_name": "contenttype",
+      "type": "menu",
+      "menu_items": "With specific content|By copying adjacent value",
+      "default": "0"
+    },
+    {
+      "name": "",
+      "id_name": "fillvalue",
+      "type": "string",
+      "visible_if": {
+        "id_name": "contenttype",
+        "value": "With specific content"
+      }
+    },
+    {
       "id_name" : "method",
       "type" : "menu",
-      "menu_items" : "Down|Up",
-      "default": "0"
+      "menu_items" : "Top down|Bottom up",
+      "default": "0",
+      "visible_if": {
+        "id_name": "contenttype",
+        "value": "By copying adjacent value"
+      }
     },
     {
       "name": "Select Columns",
