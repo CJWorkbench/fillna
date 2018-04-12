@@ -23,6 +23,7 @@
       }
     },
     {
+      "name": ""
       "id_name" : "method",
       "type" : "menu",
       "menu_items" : "Top down|Bottom up",
