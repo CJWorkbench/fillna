@@ -17,6 +17,7 @@
       "name": "",
       "id_name": "fillvalue",
       "type": "string",
+      "placeholder": "type something",
       "visible_if": {
         "id_name": "contenttype",
         "value": "With specific content"
