@@ -35,7 +35,7 @@
       }
     },
     {
-      "name": "Select Columns",
+      "name": "",
       "id_name": "colnames",
       "type": "multicolumn"
     }
