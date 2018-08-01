@@ -1,175 +1,183 @@
 import unittest
 import pandas as pd
+from pandas.testing import assert_frame_equal
 import numpy as np
-from fillna import render
+from fillna import Params, fillna, render, FillWithValue, FillWithPrevious, \
+        FillWithNext
 
-class TestFillNA(unittest.TestCase):
 
-    def setUp(self):
-        # Test data includes:
-        #  - columns of float and string types
-        #  - column of ints with zeros (should not be filled)
-        #  - columns with first or last values empty
-        #  - completely filled and completely empty columns
-        self.table = pd.DataFrame([
-            ['',			2,			3.14,		'a',	None, ''],
-            ['frederson',	0,			None,		'b', 	None, ''],
-            ['', 			-10, 		None, 	    'c', 	None, ''],
-            ['',			-2,			10,			'd', 	None,	''],
-            ['maggie',       8,			None,		'e', 	None,	''],
-            ], columns=['string','int','float','filledstr','emptyfloat','emptystring'])
+class TestParams(unittest.TestCase):
+    def test_no_colnames(self):
+        p = Params.parse(colnames='', contenttype=0,
+                         fillvalue='blah', method=0)
+        self.assertEqual(p.colnames, [])
 
-        # Pandas should infer these types anyway, but leave nothing to chance
-        self.table = self.table.astype({
-            'string':'str',
-            'int':'int64',
-            'float':'float64',
-            'filledstr':'str',
-            'emptyfloat':'float64',
-            'emptystring':'str'
-        })
+    def test_one_colname(self):
+        p = Params.parse(colnames='A', contenttype=0,
+                         fillvalue='blah', method=0)
+        self.assertEqual(p.colnames, ['A'])
 
-        self.filledNA = pd.DataFrame([
-            ['N/A',			2,		'3.14',		'a',	'N/A', 'N/A'],
-            ['frederson',	0,		'N/A',		'b', 	'N/A', 'N/A'],
-            ['N/A', 		-10, 		'N/A', 	    'c', 	'N/A', 'N/A'],
-            ['N/A',			-2,		'10.0',		'd', 	'N/A',  'N/A'],
-            ['maggie',       8,		'N/A',		'e', 	'N/A',	'N/A'],
-            ], columns=['string','int','float','filledstr','emptyfloat','emptystring'])
+    def test_many_colnames(self):
+        p = Params.parse(colnames='A,B', contenttype=0,
+                         fillvalue='blah', method=0)
+        self.assertEqual(p.colnames, ['A', 'B'])
 
-        self.filledNA = self.filledNA.astype({
-            'string': 'str',
-            'int': 'int64',
-            'float': 'str',
-            'filledstr': 'str',
-            'emptyfloat': 'str',
-            'emptystring': 'str'
-        })
+    def test_fill_with_value(self):
+        p = Params.parse(colnames='A', contenttype=0,
+                         fillvalue='blah', method=0)
+        self.assertIsInstance(p.fill_with, FillWithValue)
+        self.assertEqual(p.fill_with.value, 'blah')
 
-        self.filled7 = pd.DataFrame([
-            ['7',			2,			3.14,		'a',	7, '7'],
-            ['frederson',	0,			7,		'b', 	7, '7'],
-            ['7', 		     -10, 		7, 	    'c', 	7, '7'],
-            ['7',			-2,			10,			'd', 	7,	'7'],
-            ['maggie',       8,			7,		'e', 	7,	'7'],
-            ], columns=['string','int','float','filledstr','emptyfloat','emptystring'])
+    def test_fill_with_previous(self):
+        p = Params.parse(colnames='A', contenttype=1,
+                         fillvalue='blah', method=0)
+        self.assertIsInstance(p.fill_with, FillWithPrevious)
 
-        self.filled7 = self.filled7.astype({
-            'string': 'str',
-            'int': 'int64',
-            'float': 'float64',
-            'filledstr': 'str',
-            'emptyfloat': 'float64',
-            'emptystring': 'str'
-        })
+    def test_fill_with_next(self):
+        p = Params.parse(colnames='A', contenttype=1, value='blah', method=1)
+        self.assertIsInstance(p.fill_with, FillWithNext)
 
-        self.filleddown = pd.DataFrame([
-            ['',					2,			3.14,		'a',	None, ''],
-            ['frederson',	0,			3.14,		'b', 	None, ''],
-            ['frederson', -10, 		3.14, 	'c', 	None, ''],
-            ['frederson',	-2,			10,			'd', 	None,	''],
-            ['maggie',		8,			10,			'e', 	None,	''],
-            ], columns=['string','int','float','filledstr','emptyfloat','emptystring'])
 
-        self.filleddown = self.filleddown.astype({
-            'string':'str',
-            'int':'int64',
-            'float':'float64',
-            'filledstr':'str',
-            'emptyfloat':'float64',
-            'emptystring':'str'
-        })
+class TestFillna(unittest.TestCase):
+    def _test(self, in_table: pd.DataFrame, params: Params,
+              expected_out: pd.DataFrame) -> None:
+        fillna(in_table, params)  # modifies in_table
+        assert_frame_equal(in_table, expected_out)
 
-        self.filledup = pd.DataFrame([
-            ['frederson',	2,			3.14,		'a',	None, ''],
-            ['frederson',	0,			10,			'b', 	None, ''],
-            ['maggie', 		-10, 		10, 		'c', 	None, ''],
-            ['maggie',		-2,			10,			'd', 	None,	''],
-            ['maggie',		8,			None,			'e', 	None,	''],
-            ], columns=['string','int','float','filledstr','emptyfloat','emptystring'])
+    def test_no_colnames(self):
+        self._test(
+            pd.DataFrame({'A': [1, 2]}),
+            Params([], FillWithPrevious()),
+            pd.DataFrame({'A': [1, 2]})
+        )
 
-        self.filledup = self.filledup.astype({
-            'string':'str',
-            'int':'int64',
-            'float':'float64',
-            'filledstr':'str',
-            'emptyfloat':'float64',
-            'emptystring':'str'
-        })
+    def test_invalid_colname(self):
+        with self.assertRaises(ValueError, msg='There is no column named B'):
+            self._test(
+                pd.DataFrame({'A': [1, 2]}),
+                Params(['B'], FillWithPrevious()),
+                None
+            )
 
-    def test_NOP(self):
-        params = { 'colnames':'', 'contenttype': 0}
-        out = render(self.table, params)
-        self.assertTrue(out.equals(self.table)) # should NOP when first applied
+    def test_cast_different_columns_differently(self):
+        self._test(
+            pd.DataFrame({
+                'A': ['a', np.nan],
+                'B': [1.1, np.nan],
+                'C': [1.1, np.nan],
+            }),
+            Params(['A', 'C'], FillWithValue('v')),
+            pd.DataFrame({
+                'A': ['a', 'v'],  # stays str
+                'B': [1.1, np.nan],  # unmodified
+                'C': ['1.1', 'v'],  # converts to str
+            })
+        )
 
-        params = { 'colnames':'', 'contenttype': 1}
-        out = render(self.table, params)
-        self.assertTrue(out.equals(self.table)) # should NOP when first applied
+    def test_empty_value_does_nothing(self):
+        # TODO consider actually replacing with empty string? That seems like a
+        # valid use case.
+        self._test(
+            pd.DataFrame({'A': ['a', 'b', np.nan]}),
+            Params(['A'], FillWithValue('')),
+            pd.DataFrame({'A': ['a', 'b', np.nan]})
+        )
 
-    def test_val_empty_NOP(self):
-        params = {
-            'colnames': 'string,int,float,filledstr,emptyfloat,emptystring',
+    def test_fill_all_empty_column(self):
+        self._test(
+            pd.DataFrame({'A': [np.nan, np.nan]}, dtype=str),
+            Params(['A'], FillWithValue('c')),
+            pd.DataFrame({'A': ['c', 'c']})
+        )
+
+    def test_str_value(self):
+        self._test(
+            pd.DataFrame({'A': ['a', 'b', np.nan]}),
+            Params(['A'], FillWithValue('c')),
+            pd.DataFrame({'A': ['a', 'b', 'c']})
+        )
+
+    def test_str_existing_category(self):
+        self._test(
+            pd.DataFrame({'A': ['a', 'b', np.nan]}, dtype='category'),
+            Params(['A'], FillWithValue('a')),
+            pd.DataFrame({'A': ['a', 'b', 'a']}, dtype='category')
+        )
+
+    def test_str_new_category(self):
+        self._test(
+            pd.DataFrame({'A': ['a', 'b', np.nan]}, dtype='category'),
+            Params(['A'], FillWithValue('c')),
+            pd.DataFrame({'A': ['a', 'b', 'c']}, dtype='category')
+        )
+
+    def test_float_to_str(self):
+        self._test(
+            pd.DataFrame({'A': [1.1, 2.2, np.nan]}, dtype=float),
+            Params(['A'], FillWithValue('c')),
+            pd.DataFrame({'A': ['1.1', '2.2', 'c']}, dtype=str)
+        )
+
+    def test_float_to_float(self):
+        self._test(
+            pd.DataFrame({'A': [1.1, 2.2, np.nan]}, dtype=float),
+            Params(['A'], FillWithValue('3.3')),
+            pd.DataFrame({'A': [1.1, 2.2, 3.3]})
+        )
+
+    def test_fill_with_previous(self):
+        self._test(
+            pd.DataFrame({'A': [1.1, np.nan, np.nan]}, dtype=float),
+            Params(['A'], FillWithPrevious()),
+            pd.DataFrame({'A': [1.1, 1.1, 1.1]}, dtype=float)
+        )
+
+    def test_fill_with_previous_na_at_start(self):
+        self._test(
+            pd.DataFrame({'A': [np.nan, 2.2, np.nan]}, dtype=float),
+            Params(['A'], FillWithPrevious()),
+            pd.DataFrame({'A': [np.nan, 2.2, 2.2]}, dtype=float)
+        )
+
+    def test_fill_with_next(self):
+        self._test(
+            pd.DataFrame({'A': [1.1, np.nan, 3.3]}, dtype=float),
+            Params(['A'], FillWithNext()),
+            pd.DataFrame({'A': [1.1, 3.3, 3.3]}, dtype=float)
+        )
+
+    def test_fill_with_next_na_at_end(self):
+        self._test(
+            pd.DataFrame({'A': [np.nan, 2.2, np.nan]}, dtype=float),
+            Params(['A'], FillWithNext()),
+            pd.DataFrame({'A': [2.2, 2.2, np.nan]}, dtype=float)
+        )
+
+
+class TestRender(unittest.TestCase):
+    def test_parse_error(self):
+        result = render(pd.DataFrame({'A': [1]}), params={})
+        self.assertEqual(result, 'Missing colnames')
+
+    def test_run_error(self):
+        result = render(pd.DataFrame({'A': [1]}), params={
+            'colnames': 'B',
+            'fillvalue': 'v',
             'contenttype': 0,
-            'fillvalue': ' '
-        }
-        out = render(self.table, params)
-        self.assertTrue(out.equals(self.table))
+            'method': 0
+        })
+        self.assertEqual(result, 'There is no column named B')
 
-    def test_val_NA(self):
-        params = {
-            'colnames': 'string,int,float,filledstr,emptyfloat,emptystring',
+    def test_integration(self):
+        result = render(pd.DataFrame({'A': ['a', np.nan]}), params={
+            'colnames': 'A',
+            'fillvalue': 'v',
             'contenttype': 0,
-            'fillvalue': ' N/A\t'
-        }
-        out = render(self.table, params)
-        self.assertTrue(out.equals(self.filledNA))
+            'method': 0
+        })
+        expected = pd.DataFrame({'A': ['a', 'v']})
+        assert_frame_equal(result, expected)
 
-    def test_val_num(self):
-        params = {
-            'colnames': 'string,int,float,filledstr,emptyfloat,emptystring',
-            'contenttype': 0,
-            'fillvalue': ' 7 '
-        }
-        out = render(self.table, params)
-        self.assertTrue(out.equals(self.filled7))
-
-    def test_fill_down(self):
-        params = {
-            'colnames': 'string,int,float,filledstr,emptyfloat,emptystring',
-            'method': 0,
-            'contenttype': 1
-        }
-        out = render(self.table, params)
-        self.assertTrue(out.equals(self.filleddown))
-
-    def test_fill_up(self):
-        params = {
-            'colnames': 'string,int,float,filledstr,emptyfloat,emptystring',
-            'method': 1,
-            'contenttype': 1
-        }
-        out = render(self.table, params)
-        self.assertTrue(out.equals(self.filledup))
-
-    def test_one_column(self):
-        params = {
-            'colnames': 'emptystring',
-            'method': 0,
-            'contenttype': 1
-        }
-        out = render(self.table, params)
-        self.assertTrue(out.equals(self.table))  # in this case NOP
-
-        params = {
-            'colnames': 'string',
-            'method': 0,
-            'contenttype': 1
-        }
-        out = render(self.table, params)
-        self.assertTrue(out['string'].equals(self.filleddown['string'])) # filled this col
-        out = out.drop('string', axis=1)
-        table_minus_string = self.table.drop('string', axis=1)
-        self.assertTrue(out.equals(table_minus_string))										# but not these cols
 
 if __name__ == '__main__':
     unittest.main()

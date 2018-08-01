@@ -1,74 +1,148 @@
-def render(table, params):
-    # Get columns as an array
-    cols = params['colnames']
-    if cols is None:
-        return table
+import enum
+import pandas as pd
+from typing import Optional, List, Union
 
-    cols = [c.strip() for c in cols.split(',')]
-    if cols == [] or cols == ['']:
-        return table
 
-    import numpy as np
+def fill_series_with_value(series: pd.Series, value: str) -> pd.Series:
+    """
+    Return a Series that is like the input, filled with `value`.
 
-    def empty_str_to_none(s):
-        if isinstance(s, str) and s=='':
-            return None
+    May return the input series.
+
+    If series is numeric and value is not, converts series to string.
+    """
+    pass
+
+
+def fill_series_with_adjacent_value_in_place(series: pd.Series) -> None:
+    """
+    Replace NA values in the input series with the previous valid value.
+    """
+    pass
+
+
+class FillWith:
+    """Abstract class describing how to fill missing values."""
+
+    def run(series: pd.Series) -> pd.Series:
+        """Return a new `series` with NA values filled in."""
+        raise NotImplementedError
+
+
+class FillWithValue(FillWith):
+    """
+    Operation that fills missing values with a provided value.
+
+    The provided value is given as ``str``; `apply()` will attempt to convert
+    it to the series type, if possible.
+    """
+
+    def __init__(self, value: str):
+        self.value = value
+
+    def _convert_to_str_and_fill(self, series: pd.Series) -> pd.Series:
+        """Convert all values to str and fill in missing ones."""
+        # Usually the input will _already_ be str. But let's play it safe and
+        # convert anyway.
+        series2 = series.astype(str)
+        series2[series.isna()] = self.value
+        return series2
+
+    def run(self, series: pd.Series) -> pd.Series:
+        if not self.value:
+            # TODO consider letting the user replace NA with '', if wanted
+            return series
+
+        if hasattr(series, 'cat'):
+            # Workbench guarantees categories are always str
+            if self.value not in series.cat.categories:
+                series = series.cat.add_categories([self.value])
+
+            series = series.fillna(self.value)
+        elif pd.api.types.is_numeric_dtype(series):
+            try:
+                numeric_value = pd.to_numeric(self.value)
+                series = series.fillna(numeric_value)
+            except ValueError:
+                series = self._convert_to_str_and_fill(series)
+
         else:
-            return s
+            series = self._convert_to_str_and_fill(series)
 
-    content_type = params['contenttype']
+        return series
 
-    # Convert empty strings to None so fillna sees them
-    # If the value is provided by the user, convert everything
-    # Else don't convert entirely empty column as that is pointless
-    for c in table.columns:
-        if table[c].dtype == np.object:
-            if (content_type == 0) or (content_type ==1 and not (table[c]=='').all()):
-                table[c] = table[c].apply(empty_str_to_none)
 
-    if content_type == 0:
-        # User supplied value
-        fill_val = params['fillvalue'].strip()
-        if fill_val == '':
-            # If no actual value is supplied, NOP
-            return table
-        for col in cols:
-            # Fill in the value according to the data type
-            #if table[col].isnull().all():
-                # If entire column is None, skip it.
-            #    continue
-            if not table[col].isnull().any():
-                # If entire column has no Nones, skip it.
-                continue
-            if table[col].dtype == np.float64:
-                # If type is float, try converting value to that.
-                # If that doesn't work, fill and coerce to string.
-                # (No need to worry about int, as int64 columns cannot have NaN)
-                try:
-                    num_val = float(fill_val)
-                    table[col] = table[col].fillna(num_val)
-                except:
-                    table[col] = table[col].fillna(str(fill_val)).astype(str)
+class FillWithPrevious(FillWith):
+    """Operation that fills missing values with previous ones in the Series."""
+
+    def run(self, series: pd.Series) -> pd.Series:
+        return series.fillna(method='pad')
+
+
+class FillWithNext(FillWith):
+    """Operation that fills missing values with next ones in the Series."""
+
+    def run(self, series: pd.Series) -> pd.Series:
+        return series.fillna(method='backfill')
+
+
+class Params:
+    def __init__(self, colnames: List[str], fill_with: FillWith):
+        self.colnames = colnames
+        self.fill_with = fill_with
+
+    @staticmethod
+    def parse(**kwargs) -> 'Params':
+        """Parse params, or raise ValueError."""
+        if 'colnames' not in kwargs:
+            raise ValueError('Missing colnames')
+        colnames = list([c for c in str(kwargs['colnames']).split(',') if c])
+
+        if 'contenttype' not in kwargs:
+            raise ValueError('Missing contenttype')
+        contenttype = str(kwargs['contenttype'])
+
+        if contenttype == '0':
+            if 'fillvalue' not in kwargs:
+                raise ValueError('Missing fillvalue')
+            fill_with = FillWithValue(str(kwargs['fillvalue']))
+        elif contenttype == '1':
+            if 'method' not in kwargs:
+                raise ValueError('Missing method')
+            method = str(kwargs['method'])
+            if method == '0':
+                fill_with = FillWithPrevious()
+            elif method == '1':
+                fill_with = FillWithNext()
             else:
-                # For other types, fill in the string directly
-                table[col] = table[col].fillna(str(fill_val))
-
-    elif content_type == 1:
-        # Adjacent value
-        method = params['method']
-        if method == 0:  # down
-            table[cols] = table[cols].fillna(axis=0, method='ffill')
+                raise ValueError('Invalid method index {method}')
         else:
-            table[cols] = table[cols].fillna(axis=0, method='bfill')
+            raise ValueError('Invalid contenttype index {contenttype}')
 
-    # Convert any remaining None cells in string cols to empty string
-    # (can happen when first/last row is empty)
-    def none_to_empty_str(s):
-        return s if s is not None else ''
+        return Params(colnames, fill_with)
 
-    for c in table.columns:
-        if table[c].dtype == np.object:
-            if table[c].iloc[0] is None or table[c].iloc[-1] is None:
-                table[c] = table[c].apply(none_to_empty_str)
+
+def fillna(table: pd.DataFrame, params: Params) -> None:
+    """Modify table, or raise ValueError."""
+    for colname in params.colnames:
+        if colname not in table.columns:
+            # error
+            raise ValueError(f'There is no column named {colname}')
+
+        series = table[colname]
+        series2 = params.fill_with.run(series)
+        table[colname] = series2
+
+
+def render(table, params):
+    try:
+        parsed_params = Params.parse(**params)
+    except ValueError as err:
+        return str(err)
+
+    try:
+        fillna(table, parsed_params)
+    except ValueError as err:
+        return str(err)
 
     return table
