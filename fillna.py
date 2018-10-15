@@ -1,6 +1,5 @@
-import enum
 import pandas as pd
-from typing import Optional, List, Union
+from typing import List
 
 
 def fill_series_with_value(series: pd.Series, value: str) -> pd.Series:
