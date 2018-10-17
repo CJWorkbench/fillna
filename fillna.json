@@ -8,6 +8,11 @@
   "parameters": [
     {
       "name": "",
+      "id_name": "colnames",
+      "type": "multicolumn"
+    },
+    {
+      "name": "",
       "id_name": "contenttype",
       "type": "menu",
       "menu_items": "With specific content|By copying adjacent value",
@@ -33,11 +38,6 @@
         "id_name": "contenttype",
         "value": "By copying adjacent value"
       }
-    },
-    {
-      "name": "",
-      "id_name": "colnames",
-      "type": "multicolumn"
     }
   ]
 }
