@@ -23,7 +23,7 @@ To add a feature on the Python side:
 To develop continuously on Workbench:
 
 1. Check this code out in a sibling directory to your checked-out Workbench code
-1. Start Workbench with ``CACHE_MODULES=false bin/dev``
+1. Start Workbench with ``bin/dev start``
 2. In a separate tab in the Workbench directory, run ``pipenv run ./manage.py develop-module ../fillna https://github.com/CJWorkbench/fillna.git``
 3. Edit this code; the module will be reloaded in Workbench immediately
 4. When viewing the module in Workbench, modify parameters to re-render output
