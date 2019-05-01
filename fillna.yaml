@@ -1,0 +1,26 @@
+id_name: fillna
+name: Fill empty cells
+category: Clean
+icon: edit
+description: "Fill empty cells in specific columns with adjacent values."
+help_url: modules/clean/fill-empty-cells
+parameters:
+- id_name: colnames
+  type: multicolumn
+  name: ''
+  deprecated_string_storage: false
+- id_name: method
+  name: ''
+  type: menu
+  default: value
+  options:
+  - { value: value, label: 'With specific content' }
+  - { value: pad, label: 'By copying value from previous row' }
+  - { value: backfill, label: 'By copying value from next row' }
+- id_name: value
+  type: string
+  name: ''
+  placeholder: Content
+  visible_if:
+    id_name: method
+    value: [ value ]
