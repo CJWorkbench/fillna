@@ -15,8 +15,8 @@ parameters:
   default: value
   options:
   - { value: value, label: 'With specific content' }
-  - { value: pad, label: 'By copying value from previous row' }
-  - { value: backfill, label: 'By copying value from next row' }
+  - { value: pad, label: 'By copying value from above' }
+  - { value: backfill, label: 'By copying value from below' }
 - id_name: value
   type: string
   name: ''
