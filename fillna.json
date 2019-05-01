@@ -9,34 +9,28 @@
     {
       "name": "",
       "id_name": "colnames",
-      "type": "multicolumn"
+      "type": "multicolumn",
+      "deprecated_string_storage": false
     },
     {
       "name": "",
-      "id_name": "contenttype",
+      "id_name": "method",
       "type": "menu",
-      "menu_items": "With specific content|By copying adjacent value",
-      "default": "0"
+      "default": "value",
+      "options": [
+          { "value": "value", "label": "With specific content" },
+          { "value": "pad", "label": "By copying value in previous row" },
+          { "value": "backfill", "label": "By copying value in next row" }
+      ]
     },
     {
       "name": "",
-      "id_name": "fillvalue",
+      "id_name": "value",
       "type": "string",
       "placeholder": "type something",
       "visible_if": {
         "id_name": "contenttype",
-        "value": "With specific content"
-      }
-    },
-    {
-      "name": "",
-      "id_name" : "method",
-      "type" : "menu",
-      "menu_items" : "Top down|Bottom up",
-      "default": "0",
-      "visible_if": {
-        "id_name": "contenttype",
-        "value": "By copying adjacent value"
+        "value": [ "value" ]
       }
     }
   ]

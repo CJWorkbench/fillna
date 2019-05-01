@@ -1,16 +1,30 @@
-import pandas as pd
+from __future__ import annotations
+from abc import ABC, abstractmethod
+from dataclasses import dataclass
 from typing import List
+import pandas as pd
 
 
-class FillWith:
+class FillWith(ABC):
     """Abstract class describing how to fill missing values."""
 
+    @abstractmethod
     def run(series: pd.Series) -> pd.Series:
         """Return a new `series` with NA values filled in."""
-        raise NotImplementedError
+
+    @classmethod
+    def parse(cls, method: str, value: str) -> FillWith:
+        if method == 'value':
+            return FillValue(value)
+        elif method == 'pad':
+            return FillPad()
+        elif method == 'backfill':
+            return FillBackfill()
+        else:
+            raise ValueError(f'Invalid method {method}')
 
 
-class FillWithValue(FillWith):
+class FillValue(FillWith):
     """
     Operation that fills missing values with a provided value.
 
@@ -23,6 +37,9 @@ class FillWithValue(FillWith):
 
     def _convert_to_str_and_fill(self, series: pd.Series) -> pd.Series:
         """Convert all values to str and fill in missing ones."""
+        # FIXME add a suggestion to quick-fix? Or better yet, find a nice way
+        # to prompt the user and fail, instead of converting automatically.
+
         # Usually the input will _already_ be str. But let's play it safe and
         # convert anyway.
         series2 = series.astype(str)
@@ -56,77 +73,59 @@ class FillWithValue(FillWith):
         return series
 
 
-class FillWithPrevious(FillWith):
+class FillPad(FillWith):
     """Operation that fills missing values with previous ones in the Series."""
 
     def run(self, series: pd.Series) -> pd.Series:
         return series.fillna(method='pad')
 
 
-class FillWithNext(FillWith):
+class FillBackfill(FillWith):
     """Operation that fills missing values with next ones in the Series."""
 
     def run(self, series: pd.Series) -> pd.Series:
         return series.fillna(method='backfill')
 
 
-class Params:
-    def __init__(self, colnames: List[str], fill_with: FillWith):
-        self.colnames = colnames
-        self.fill_with = fill_with
-
-    @staticmethod
-    def parse(**kwargs) -> 'Params':
-        """Parse params, or raise ValueError."""
-        if 'colnames' not in kwargs:
-            raise ValueError('Missing colnames')
-        colnames = list([c for c in str(kwargs['colnames']).split(',') if c])
-
-        if 'contenttype' not in kwargs:
-            raise ValueError('Missing contenttype')
-        contenttype = str(kwargs['contenttype'])
-
-        if contenttype == '0':
-            if 'fillvalue' not in kwargs:
-                raise ValueError('Missing fillvalue')
-            fill_with = FillWithValue(str(kwargs['fillvalue']))
-        elif contenttype == '1':
-            if 'method' not in kwargs:
-                raise ValueError('Missing method')
-            method = str(kwargs['method'])
-            if method == '0':
-                fill_with = FillWithPrevious()
-            elif method == '1':
-                fill_with = FillWithNext()
-            else:
-                raise ValueError('Invalid method index {method}')
-        else:
-            raise ValueError('Invalid contenttype index {contenttype}')
-
-        return Params(colnames, fill_with)
-
-
-def fillna(table: pd.DataFrame, params: Params) -> None:
-    """Modify table, or raise ValueError."""
-    for colname in params.colnames:
-        if colname not in table.columns:
-            # error
-            raise ValueError(f'There is no column named {colname}')
-
+def fillna(table: pd.DataFrame, colnames: List[str],
+           fill_with: FillWith) -> None:
+    for colname in colnames:
         series = table[colname]
-        series2 = params.fill_with.run(series)
+        series2 = fill_with.run(series)
         table[colname] = series2
 
 
 def render(table, params):
-    try:
-        parsed_params = Params.parse(**params)
-    except ValueError as err:
-        return str(err)
-
-    try:
-        fillna(table, parsed_params)
-    except ValueError as err:
-        return str(err)
-
+    fill_with = FillWith.parse(params['method'], params['value'])
+    fillna(table, params['colnames'], fill_with)
     return table
+
+
+def _migrate_params_v0_to_v1(params):
+    """
+    v0: 'colnames' is comma-separated str; menus are integers
+    'contenttype' (0=value, 1=show another menu) and
+    'method' (0=pad, 1=backfill). value is 'fillvalue'.
+
+    v1: 'colnames' is List[str]; menu options are value|pad|backfill.
+    value is 'value'.
+
+    (These all bring params in line with pandas.DataFrame.fillna.)
+    """
+    method = {
+        (0, 0): 'value',
+        (0, 1): 'value',
+        (1, 0): 'pad',
+        (1, 1): 'backfill',
+    }[(params['contenttype'], params['method'])]
+    return {
+        'colnames': [c for c in params['colnames'].split(',') if c],
+        'method': method,
+        'value': params['fillvalue'],
+    }
+
+
+def migrate_params(params):
+    if 'contenttype' in params:
+        params = _migrate_params_v0_to_v1(params)
+    return params

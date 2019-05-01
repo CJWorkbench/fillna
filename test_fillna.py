@@ -1,63 +1,92 @@
+from typing import Any, Dict
 import unittest
 import pandas as pd
 from pandas.testing import assert_frame_equal
 import numpy as np
-from fillna import Params, fillna, render, FillWithValue, FillWithPrevious, \
-        FillWithNext
+from fillna import migrate_params, render
 
 
-class TestParams(unittest.TestCase):
-    def test_no_colnames(self):
-        p = Params.parse(colnames='', contenttype=0,
-                         fillvalue='blah', method=0)
-        self.assertEqual(p.colnames, [])
-
-    def test_one_colname(self):
-        p = Params.parse(colnames='A', contenttype=0,
-                         fillvalue='blah', method=0)
-        self.assertEqual(p.colnames, ['A'])
-
-    def test_many_colnames(self):
-        p = Params.parse(colnames='A,B', contenttype=0,
-                         fillvalue='blah', method=0)
-        self.assertEqual(p.colnames, ['A', 'B'])
-
-    def test_fill_with_value(self):
-        p = Params.parse(colnames='A', contenttype=0,
-                         fillvalue='blah', method=0)
-        self.assertIsInstance(p.fill_with, FillWithValue)
-        self.assertEqual(p.fill_with.value, 'blah')
-
-    def test_fill_with_previous(self):
-        p = Params.parse(colnames='A', contenttype=1,
-                         fillvalue='blah', method=0)
-        self.assertIsInstance(p.fill_with, FillWithPrevious)
-
-    def test_fill_with_next(self):
-        p = Params.parse(colnames='A', contenttype=1, value='blah', method=1)
-        self.assertIsInstance(p.fill_with, FillWithNext)
+def P(colnames=[], method='value', value=''):
+    return {
+        'colnames': colnames,
+        'method': method,
+        'value': value,
+    }
 
 
-class TestFillna(unittest.TestCase):
-    def _test(self, in_table: pd.DataFrame, params: Params,
+class MigrateParamsTest(unittest.TestCase):
+    def test_v0_no_colnames(self):
+        self.assertEqual(migrate_params({
+            'colnames': '',
+            'contenttype': 0,
+            'fillvalue': '',
+            'method': 0,
+        }), {
+            'colnames': [],
+            'method': 'value',
+            'value': '',
+        })
+
+    def test_v0_colnames(self):
+        self.assertEqual(migrate_params({
+            'colnames': 'A,B',
+            'contenttype': 0,
+            'fillvalue': 'x',
+            'method': 0,
+        }), {
+            'colnames': ['A', 'B'],
+            'method': 'value',
+            'value': 'x',
+        })
+
+    def test_v0_topdown(self):
+        self.assertEqual(migrate_params({
+            'colnames': '',
+            'contenttype': 1,
+            'fillvalue': '',
+            'method': 0,
+        }), {
+            'colnames': [],
+            'method': 'pad',
+            'value': '',
+        })
+
+    def test_v0_bottomup(self):
+        self.assertEqual(migrate_params({
+            'colnames': '',
+            'contenttype': 1,
+            'fillvalue': '',
+            'method': 1,
+        }), {
+            'colnames': [],
+            'method': 'backfill',
+            'value': '',
+        })
+
+    def test_v1(self):
+        self.assertEqual(migrate_params({
+            'colnames': ['A'],
+            'method': 'backfill',
+            'value': 'x',
+        }), {
+            'colnames': ['A'],
+            'method': 'backfill',
+            'value': 'x',
+        })
+
+
+class TestRender(unittest.TestCase):
+    def _test(self, in_table: pd.DataFrame, params: Dict[str, Any],
               expected_out: pd.DataFrame) -> None:
-        fillna(in_table, params)  # modifies in_table
-        assert_frame_equal(in_table, expected_out)
+        result = render(in_table, params)  # modifies in_table
+        assert_frame_equal(result, expected_out)
 
     def test_no_colnames(self):
         self._test(
             pd.DataFrame({'A': [1, 2]}),
-            Params([], FillWithPrevious()),
+            P([]),
             pd.DataFrame({'A': [1, 2]})
         )
-
-    def test_invalid_colname(self):
-        with self.assertRaises(ValueError, msg='There is no column named B'):
-            self._test(
-                pd.DataFrame({'A': [1, 2]}),
-                Params(['B'], FillWithPrevious()),
-                None
-            )
 
     def test_cast_different_columns_differently(self):
         self._test(
@@ -66,7 +95,7 @@ class TestFillna(unittest.TestCase):
                 'B': [1.1, np.nan],
                 'C': [1.1, np.nan],
             }),
-            Params(['A', 'C'], FillWithValue('v')),
+            P(['A', 'C'], method='value', value='v'),
             pd.DataFrame({
                 'A': ['a', 'v'],  # stays str
                 'B': [1.1, np.nan],  # unmodified
@@ -79,111 +108,86 @@ class TestFillna(unittest.TestCase):
         # valid use case.
         self._test(
             pd.DataFrame({'A': ['a', 'b', np.nan]}),
-            Params(['A'], FillWithValue('')),
+            P(['A'], 'value', ''),
             pd.DataFrame({'A': ['a', 'b', np.nan]})
         )
 
     def test_fill_all_empty_column(self):
         self._test(
             pd.DataFrame({'A': [np.nan, np.nan]}, dtype=str),
-            Params(['A'], FillWithValue('c')),
+            P(['A'], 'value', 'c'),
             pd.DataFrame({'A': ['c', 'c']})
         )
 
     def test_str_value(self):
         self._test(
             pd.DataFrame({'A': ['a', 'b', np.nan]}),
-            Params(['A'], FillWithValue('c')),
+            P(['A'], 'value', 'c'),
             pd.DataFrame({'A': ['a', 'b', 'c']})
         )
 
     def test_str_existing_category(self):
         self._test(
             pd.DataFrame({'A': ['a', 'b', np.nan]}, dtype='category'),
-            Params(['A'], FillWithValue('a')),
+            P(['A'], 'value', 'a'),
             pd.DataFrame({'A': ['a', 'b', 'a']}, dtype='category')
         )
 
     def test_str_new_category(self):
         self._test(
             pd.DataFrame({'A': ['a', 'b', np.nan]}, dtype='category'),
-            Params(['A'], FillWithValue('c')),
+            P(['A'], 'value', 'c'),
             pd.DataFrame({'A': ['a', 'b', 'c']}, dtype='category')
         )
 
     def test_str_new_category_but_no_na(self):
         self._test(
             pd.DataFrame({'A': ['a', 'b']}, dtype='category'),
-            Params(['A'], FillWithValue('c')),
+            P(['A'], 'value', 'c'),
             pd.DataFrame({'A': ['a', 'b']}, dtype='category')
         )
 
     def test_float_to_str(self):
         self._test(
             pd.DataFrame({'A': [1.1, 2.2, np.nan]}, dtype=float),
-            Params(['A'], FillWithValue('c')),
+            P(['A'], 'value', 'c'),
             pd.DataFrame({'A': ['1.1', '2.2', 'c']}, dtype=str)
         )
 
     def test_float_to_float(self):
         self._test(
             pd.DataFrame({'A': [1.1, 2.2, np.nan]}, dtype=float),
-            Params(['A'], FillWithValue('3.3')),
+            P(['A'], 'value', '3.3'),
             pd.DataFrame({'A': [1.1, 2.2, 3.3]})
         )
 
     def test_fill_with_previous(self):
         self._test(
             pd.DataFrame({'A': [1.1, np.nan, np.nan]}, dtype=float),
-            Params(['A'], FillWithPrevious()),
+            P(['A'], 'pad'),
             pd.DataFrame({'A': [1.1, 1.1, 1.1]}, dtype=float)
         )
 
     def test_fill_with_previous_na_at_start(self):
         self._test(
             pd.DataFrame({'A': [np.nan, 2.2, np.nan]}, dtype=float),
-            Params(['A'], FillWithPrevious()),
+            P(['A'], 'pad'),
             pd.DataFrame({'A': [np.nan, 2.2, 2.2]}, dtype=float)
         )
 
     def test_fill_with_next(self):
         self._test(
             pd.DataFrame({'A': [1.1, np.nan, 3.3]}, dtype=float),
-            Params(['A'], FillWithNext()),
+            P(['A'], 'backfill'),
             pd.DataFrame({'A': [1.1, 3.3, 3.3]}, dtype=float)
         )
 
     def test_fill_with_next_na_at_end(self):
         self._test(
             pd.DataFrame({'A': [np.nan, 2.2, np.nan]}, dtype=float),
-            Params(['A'], FillWithNext()),
+            P(['A'], 'backfill'),
             pd.DataFrame({'A': [2.2, 2.2, np.nan]}, dtype=float)
         )
-
-
-class TestRender(unittest.TestCase):
-    def test_parse_error(self):
-        result = render(pd.DataFrame({'A': [1]}), params={})
-        self.assertEqual(result, 'Missing colnames')
-
-    def test_run_error(self):
-        result = render(pd.DataFrame({'A': [1]}), params={
-            'colnames': 'B',
-            'fillvalue': 'v',
-            'contenttype': 0,
-            'method': 0
-        })
-        self.assertEqual(result, 'There is no column named B')
-
-    def test_integration(self):
-        result = render(pd.DataFrame({'A': ['a', np.nan]}), params={
-            'colnames': 'A',
-            'fillvalue': 'v',
-            'contenttype': 0,
-            'method': 0
-        })
-        expected = pd.DataFrame({'A': ['a', 'v']})
-        assert_frame_equal(result, expected)
 
 
 if __name__ == '__main__':
