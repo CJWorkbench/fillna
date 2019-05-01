@@ -29,7 +29,7 @@
       "type": "string",
       "placeholder": "type something",
       "visible_if": {
-        "id_name": "contenttype",
+        "id_name": "method",
         "value": [ "value" ]
       }
     }
