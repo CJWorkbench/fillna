@@ -2,24 +2,6 @@ import pandas as pd
 from typing import List
 
 
-def fill_series_with_value(series: pd.Series, value: str) -> pd.Series:
-    """
-    Return a Series that is like the input, filled with `value`.
-
-    May return the input series.
-
-    If series is numeric and value is not, converts series to string.
-    """
-    pass
-
-
-def fill_series_with_adjacent_value_in_place(series: pd.Series) -> None:
-    """
-    Replace NA values in the input series with the previous valid value.
-    """
-    pass
-
-
 class FillWith:
     """Abstract class describing how to fill missing values."""
 
