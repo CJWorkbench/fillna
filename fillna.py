@@ -34,6 +34,9 @@ class FillWithValue(FillWith):
             # TODO consider letting the user replace NA with '', if wanted
             return series
 
+        if not series.isnull().any():
+            return series
+
         if hasattr(series, 'cat'):
             # Workbench guarantees categories are always str
             if self.value not in series.cat.categories:

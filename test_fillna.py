@@ -111,6 +111,13 @@ class TestFillna(unittest.TestCase):
             pd.DataFrame({'A': ['a', 'b', 'c']}, dtype='category')
         )
 
+    def test_str_new_category_but_no_na(self):
+        self._test(
+            pd.DataFrame({'A': ['a', 'b']}, dtype='category'),
+            Params(['A'], FillWithValue('c')),
+            pd.DataFrame({'A': ['a', 'b']}, dtype='category')
+        )
+
     def test_float_to_str(self):
         self._test(
             pd.DataFrame({'A': [1.1, 2.2, np.nan]}, dtype=float),
