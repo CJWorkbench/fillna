@@ -1,5 +1,5 @@
 id_name: fillna
-name: Fill empty cells
+name: Fill null cells
 category: Clean
 icon: edit
 description: "Fill empty cells in specific columns with adjacent values."
