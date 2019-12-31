@@ -2,7 +2,7 @@ id_name: fillna
 name: Fill null cells
 category: Clean
 icon: edit
-description: "Fill null cells in specific columns with adjacent values."
+description: "Fill null cells with specific or adjacent values."
 help_url: modules/clean/fill-empty-cells
 parameters:
 - id_name: colnames
