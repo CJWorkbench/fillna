@@ -1,0 +1,24 @@
+#. default-message: Fill null cells
+msgid "_spec.name"
+msgstr ""
+
+#. default-message: Fill null cells with specific or adjacent values.
+msgid "_spec.description"
+msgstr ""
+
+#. default-message: With specific content
+msgid "_spec.parameters.method.options.value.label"
+msgstr ""
+
+#. default-message: By copying value from above
+msgid "_spec.parameters.method.options.pad.label"
+msgstr ""
+
+#. default-message: By copying value from below
+msgid "_spec.parameters.method.options.backfill.label"
+msgstr ""
+
+#. default-message: Content
+msgid "_spec.parameters.value.placeholder"
+msgstr ""
+
