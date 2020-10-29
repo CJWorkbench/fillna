@@ -1,8 +1,8 @@
 id_name: fillna
-name: Fill empty cells
+name: Fill null cells
 category: Clean
 icon: edit
-description: "Fill empty cells in specific columns with adjacent values."
+description: "Fill null cells with specific or adjacent values."
 help_url: modules/clean/fill-empty-cells
 parameters:
 - id_name: colnames
@@ -16,7 +16,7 @@ parameters:
   - { value: value, label: 'With specific content' }
   - { value: pad, label: 'By copying value from above' }
   - { value: backfill, label: 'By copying value from below' }
-  - { value: columns, label: 'By copying from another column' }
+  - { value: columns, label: 'By copying from other columns' }
 - id_name: value
   type: string
   name: ''

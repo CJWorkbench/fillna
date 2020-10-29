@@ -1,8 +1,8 @@
-#. default-message: Fill empty cells
+#. default-message: Fill null cells
 msgid "_spec.name"
 msgstr ""
 
-#. default-message: Fill empty cells in specific columns with adjacent values.
+#. default-message: Fill null cells with specific or adjacent values.
 msgid "_spec.description"
 msgstr ""
 
@@ -18,7 +18,7 @@ msgstr ""
 msgid "_spec.parameters.method.options.backfill.label"
 msgstr ""
 
-#. default-message: By copying from another column
+#. default-message: By copying from other columns
 msgid "_spec.parameters.method.options.columns.label"
 msgstr ""
 
