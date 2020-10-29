@@ -14,14 +14,14 @@ class FillWith(ABC):
 
     @classmethod
     def parse(cls, method: str, value: str) -> FillWith:
-        if method == 'value':
+        if method == "value":
             return FillValue(value)
-        elif method == 'pad':
+        elif method == "pad":
             return FillPad()
-        elif method == 'backfill':
+        elif method == "backfill":
             return FillBackfill()
         else:
-            raise ValueError(f'Invalid method {method}')
+            raise ValueError(f"Invalid method {method}")
 
 
 class FillValue(FillWith):
@@ -54,7 +54,7 @@ class FillValue(FillWith):
         if not series.isnull().any():
             return series
 
-        if hasattr(series, 'cat'):
+        if hasattr(series, "cat"):
             # Workbench guarantees categories are always str
             if self.value not in series.cat.categories:
                 series = series.cat.add_categories([self.value])
@@ -77,18 +77,17 @@ class FillPad(FillWith):
     """Operation that fills missing values with previous ones in the Series."""
 
     def run(self, series: pd.Series) -> pd.Series:
-        return series.fillna(method='pad')
+        return series.fillna(method="pad")
 
 
 class FillBackfill(FillWith):
     """Operation that fills missing values with next ones in the Series."""
 
     def run(self, series: pd.Series) -> pd.Series:
-        return series.fillna(method='backfill')
+        return series.fillna(method="backfill")
 
 
-def fillna(table: pd.DataFrame, colnames: List[str],
-           fill_with: FillWith) -> None:
+def fillna(table: pd.DataFrame, colnames: List[str], fill_with: FillWith) -> None:
     for colname in colnames:
         series = table[colname]
         series2 = fill_with.run(series)
@@ -96,8 +95,8 @@ def fillna(table: pd.DataFrame, colnames: List[str],
 
 
 def render(table, params):
-    fill_with = FillWith.parse(params['method'], params['value'])
-    fillna(table, params['colnames'], fill_with)
+    fill_with = FillWith.parse(params["method"], params["value"])
+    fillna(table, params["colnames"], fill_with)
     return table
 
 
@@ -113,19 +112,19 @@ def _migrate_params_v0_to_v1(params):
     (These all bring params in line with pandas.DataFrame.fillna.)
     """
     method = {
-        (0, 0): 'value',
-        (0, 1): 'value',
-        (1, 0): 'pad',
-        (1, 1): 'backfill',
-    }[(params['contenttype'], params['method'])]
+        (0, 0): "value",
+        (0, 1): "value",
+        (1, 0): "pad",
+        (1, 1): "backfill",
+    }[(params["contenttype"], params["method"])]
     return {
-        'colnames': [c for c in params['colnames'].split(',') if c],
-        'method': method,
-        'value': params['fillvalue'],
+        "colnames": [c for c in params["colnames"].split(",") if c],
+        "method": method,
+        "value": params["fillvalue"],
     }
 
 
 def migrate_params(params):
-    if 'contenttype' in params:
+    if "contenttype" in params:
         params = _migrate_params_v0_to_v1(params)
     return params
