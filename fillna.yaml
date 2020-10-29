@@ -16,6 +16,7 @@ parameters:
   - { value: value, label: 'With specific content' }
   - { value: pad, label: 'By copying value from above' }
   - { value: backfill, label: 'By copying value from below' }
+  - { value: columns, label: 'By copying from another column' }
 - id_name: value
   type: string
   name: ''
@@ -23,3 +24,9 @@ parameters:
   visible_if:
     id_name: method
     value: [ value ]
+- id_name: from_colnames
+  type: multicolumn
+  name: 'Copy first non-null value from'
+  visible_if:
+    id_name: method
+    value: [ columns ]

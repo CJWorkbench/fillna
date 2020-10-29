@@ -1,32 +1,93 @@
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
+import datetime
+import dateutil
 from typing import List
+from cjwmodule.i18n import trans, I18nMessage
+
 import pandas as pd
+
+
+def _warn_converted_to_text_because_value_not_timestamp(colname: str, value: str):
+    return {
+        "message": trans(
+            "errors.valueNotTimestamp",
+            "Column “{colname}” was converted to Text because the given value is not a Timestamp. "
+            "Try entering a value that looks like “2020-01-10” or “2020-01-10T13:11”.",
+            # This message doesn't take a "value" argument, but let's
+            # store arguments in case we change the message in the future.
+            {"colname": colname, "value": value},
+        )
+    }
+
+
+def _warn_converted_to_text_because_value_not_number(colname: str, value: str):
+    return {
+        "message": trans(
+            "errors.valueNotNumber",
+            "Column “{colname}” was converted to Text because the given value is not a Number. "
+            "Try entering a value that looks like “1234” or “12.31242”.",
+            # This message doesn't take a "value" argument, but let's
+            # store arguments in case we change the message in the future.
+            {"colname": colname, "value": value},
+        )
+    }
+
+
+def _warn_converted_to_text_because_types_conflict(
+    colname: str, value_colnames: List[str]
+):
+    return {
+        "message": trans(
+            "errors.valueColumnsWrongType",
+            "Values in column “{colname}” were converted to Text because "
+            "the chosen columns have different types.",
+            # This message doesn't take a "value_colnames" argument, but let's
+            # store arguments in case we change the message in the future.
+            {"colname": colname, "value_colnames": value_colnames},
+        )
+    }
+
+
+def _workbench_type(series: pd.Series) -> Literal["text", "number", "timestamp"]:
+    if pd.api.types.is_numeric_dtype(series):
+        return "number"
+    elif pd.api.types.is_datetime64_dtype(series):
+        return "timestamp"
+    else:
+        return "text"
+
+
+def _convert_to_str(series: pd.Series) -> pd.Series:
+    ret = series.astype(str)
+    ret[series.isna()] = None
+    return ret
 
 
 class FillWith(ABC):
     """Abstract class describing how to fill missing values."""
 
     @abstractmethod
-    def run(series: pd.Series) -> pd.Series:
+    def run(series: pd.Series) -> Tuple[pd.Series, List]:
         """Return a new `series` with NA values filled in."""
 
     @classmethod
-    def parse(cls, method: str, value: str) -> FillWith:
+    def parse(cls, method: str, value: str, from_columns: List[Series]) -> FillWith:
         if method == "value":
             return FillValue(value)
         elif method == "pad":
             return FillPad()
         elif method == "backfill":
             return FillBackfill()
+        elif method == "columns":
+            return FillWithColumns(from_columns)
         else:
             raise ValueError(f"Invalid method {method}")
 
 
 class FillValue(FillWith):
-    """
-    Operation that fills missing values with a provided value.
+    """Operation that fills missing values with a provided value.
 
     The provided value is given as ``str``; `apply()` will attempt to convert
     it to the series type, if possible.
@@ -35,65 +96,136 @@ class FillValue(FillWith):
     def __init__(self, value: str):
         self.value = value
 
-    def _convert_to_str_and_fill(self, series: pd.Series) -> pd.Series:
-        """Convert all values to str and fill in missing ones."""
-        # FIXME add a suggestion to quick-fix? Or better yet, find a nice way
-        # to prompt the user and fail, instead of converting automatically.
-
-        # Usually the input will _already_ be str. But let's play it safe and
-        # convert anyway.
-        series2 = series.astype(str)
-        series2[series.isna()] = self.value
-        return series2
-
-    def run(self, series: pd.Series) -> pd.Series:
+    def run(self, series: pd.Series):
         if not series.isnull().any():
-            return series
+            # There are no nulls. No-op.
+            return series, []
 
-        if hasattr(series, "cat"):
-            # Workbench guarantees categories are always str
-            if self.value not in series.cat.categories:
-                series = series.cat.add_categories([self.value])
+        if self.value == "" and _workbench_type(series) in {"number", "timestamp"}:
+            # "" means null for timestamps and numbers
+            return series, []
 
-            series = series.fillna(self.value)
-        elif pd.api.types.is_numeric_dtype(series):
+        value = self.value
+        warnings = []
+
+        # Try to convert `value` to series type. If we fail, convert `series`
+        # to str and add a warning.
+        if _workbench_type(series) == "number":
             try:
-                numeric_value = pd.to_numeric(self.value)
-                series = series.fillna(numeric_value)
+                value = float(self.value)
             except ValueError:
-                series = self._convert_to_str_and_fill(series)
+                warnings.append(
+                    _warn_converted_to_text_because_value_not_number(series.name, value)
+                )
+                series = _convert_to_str(series)
+        elif _workbench_type(series) == "timestamp":
+            try:
+                value = dateutil.parser.isoparse(value)
+                # TODO test nixing timezone
+                if value.tzinfo:
+                    value = value.astimezone(datetime.timezone.utc).replace(tzinfo=None)
+            except ValueError:
+                warnings.append(
+                    _warn_converted_to_text_because_value_not_timestamp(
+                        series.name, value
+                    )
+                )
+                series = _convert_to_str(series)
 
-        else:
-            series = self._convert_to_str_and_fill(series)
+        # category (of text) series: value is str; make sure we can fillna() with it
+        if hasattr(series, "cat") and self.value not in series.cat.categories:
+            series = series.cat.add_categories([self.value])
 
-        return series
+        return series.fillna(value), warnings
 
 
 class FillPad(FillWith):
     """Operation that fills missing values with previous ones in the Series."""
 
-    def run(self, series: pd.Series) -> pd.Series:
-        return series.fillna(method="pad")
+    def run(self, series: pd.Series):
+        return series.fillna(method="pad"), []
 
 
 class FillBackfill(FillWith):
     """Operation that fills missing values with next ones in the Series."""
 
-    def run(self, series: pd.Series) -> pd.Series:
-        return series.fillna(method="backfill")
+    def run(self, series: pd.Series):
+        return series.fillna(method="backfill"), []
+
+
+class FillWithColumns(FillWith):
+    """Operation that fills missing values using other columns' values."""
+
+    def __init__(self, from_columns: List[pd.Series]):
+        self.from_columns = from_columns
+
+    def run(self, series: pd.Series):
+        warnings = []
+
+        output_is_categorical = hasattr(series, "cat") and all(
+            hasattr(c, "cat") for c in self.from_columns
+        )
+
+        if hasattr(series, "cat"):
+            series = _convert_to_str(series)
+
+        best_type = _workbench_type(series)
+        for from_column in self.from_columns:
+            if _workbench_type(from_column) != best_type:
+                # Unhappy path: convert everything to text
+                if best_type != "text":
+                    series = _convert_to_str(series)
+
+                from_columns = [
+                    col if _workbench_type(col) == "text" else _convert_to_str(col)
+                    for col in self.from_columns
+                ]
+                warnings.append(
+                    _warn_converted_to_text_because_types_conflict(
+                        series.name,
+                        [
+                            col.name
+                            for col, orig in zip(from_columns, self.from_columns)
+                            if col is not orig
+                        ],
+                    )
+                )
+
+                break
+        else:
+            from_columns = self.from_columns
+
+        ret = series.copy()
+        for from_column in from_columns:
+            if hasattr(from_column, "cat"):
+                from_column = _convert_to_str(from_column)
+            ret.fillna(from_column, inplace=True)
+
+        if output_is_categorical:
+            ret = ret.astype("category")
+
+        return ret, warnings
 
 
 def fillna(table: pd.DataFrame, colnames: List[str], fill_with: FillWith) -> None:
+    warnings = []
     for colname in colnames:
         series = table[colname]
-        series2 = fill_with.run(series)
+        series2, series_warnings = fill_with.run(series)
+        warnings.extend(series_warnings)
         table[colname] = series2
+    return warnings
 
 
 def render(table, params):
-    fill_with = FillWith.parse(params["method"], params["value"])
-    fillna(table, params["colnames"], fill_with)
-    return table
+    fill_with = FillWith.parse(
+        params["method"], params["value"], [table[c] for c in params["from_colnames"]]
+    )
+    warnings = fillna(table, params["colnames"], fill_with)
+    if warnings:
+        return table, warnings
+    else:
+        return table
 
 
 def _migrate_params_v0_to_v1(params):
@@ -120,7 +252,17 @@ def _migrate_params_v0_to_v1(params):
     }
 
 
+def _migrate_params_v1_to_v2(params):
+    """v1: No "from_colnames" choice. v2 has one."""
+    return {
+        **params,
+        "from_colnames": [],
+    }
+
+
 def migrate_params(params):
     if "contenttype" in params:
         params = _migrate_params_v0_to_v1(params)
+    if "from_colnames" not in params:
+        params = _migrate_params_v1_to_v2(params)
     return params
