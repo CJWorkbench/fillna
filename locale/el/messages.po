@@ -1,0 +1,57 @@
+# Greek translations for PROJECT.
+# Copyright (C) 2020 ORGANIZATION
+# This file is distributed under the same license as the PROJECT project.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2020.
+#
+#, fuzzy
+msgid ""
+msgstr ""
+"Project-Id-Version: PROJECT VERSION\n"
+"Report-Msgid-Bugs-To: EMAIL@ADDRESS\n"
+"POT-Creation-Date: 2020-10-29 18:04+0000\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language: el\n"
+"Language-Team: el <LL@li.org>\n"
+"Plural-Forms: nplurals=2; plural=(n != 1)\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=utf-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Generated-By: Babel 2.8.0\n"
+
+msgid "_spec.name"
+msgstr ""
+
+msgid "_spec.description"
+msgstr ""
+
+msgid "_spec.parameters.method.options.value.label"
+msgstr ""
+
+msgid "_spec.parameters.method.options.pad.label"
+msgstr ""
+
+msgid "_spec.parameters.method.options.backfill.label"
+msgstr ""
+
+msgid "_spec.parameters.method.options.columns.label"
+msgstr ""
+
+msgid "_spec.parameters.value.placeholder"
+msgstr ""
+
+msgid "_spec.parameters.from_colnames.name"
+msgstr ""
+
+#: fillna.py:14
+msgid "errors.valueNotTimestamp"
+msgstr ""
+
+#: fillna.py:27
+msgid "errors.valueNotNumber"
+msgstr ""
+
+#: fillna.py:42
+msgid "errors.valueColumnsWrongType"
+msgstr ""
+

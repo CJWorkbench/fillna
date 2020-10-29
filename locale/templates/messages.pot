@@ -1,0 +1,47 @@
+#. default-message: Fill empty cells
+msgid "_spec.name"
+msgstr ""
+
+#. default-message: Fill empty cells in specific columns with adjacent values.
+msgid "_spec.description"
+msgstr ""
+
+#. default-message: With specific content
+msgid "_spec.parameters.method.options.value.label"
+msgstr ""
+
+#. default-message: By copying value from above
+msgid "_spec.parameters.method.options.pad.label"
+msgstr ""
+
+#. default-message: By copying value from below
+msgid "_spec.parameters.method.options.backfill.label"
+msgstr ""
+
+#. default-message: By copying from another column
+msgid "_spec.parameters.method.options.columns.label"
+msgstr ""
+
+#. default-message: Content
+msgid "_spec.parameters.value.placeholder"
+msgstr ""
+
+#. default-message: Copy first non-null value from
+msgid "_spec.parameters.from_colnames.name"
+msgstr ""
+
+#. default-message: Column “{colname}” was converted to Text because the given value is not a Timestamp. Try entering a value that looks like “2020-01-10” or “2020-01-10T13:11”.
+#: fillna.py:14
+msgid "errors.valueNotTimestamp"
+msgstr ""
+
+#. default-message: Column “{colname}” was converted to Text because the given value is not a Number. Try entering a value that looks like “1234” or “12.31242”.
+#: fillna.py:27
+msgid "errors.valueNotNumber"
+msgstr ""
+
+#. default-message: Values in column “{colname}” were converted to Text because the chosen columns have different types.
+#: fillna.py:42
+msgid "errors.valueColumnsWrongType"
+msgstr ""
+
