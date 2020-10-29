@@ -129,13 +129,18 @@ class TestRender(unittest.TestCase):
             ),
         )
 
-    def test_empty_value_does_nothing(self):
-        # TODO consider actually replacing with empty string? That seems like a
-        # valid use case.
+    def test_empty_value_is_str_text(self):
         self._test(
             pd.DataFrame({"A": ["a", "b", np.nan]}),
             P(["A"], "value", ""),
-            pd.DataFrame({"A": ["a", "b", np.nan]}),
+            pd.DataFrame({"A": ["a", "b", ""]}),
+        )
+
+    def test_empty_value_is_null_number(self):
+        self._test(
+            pd.DataFrame({"A": [1, 2, np.nan]}),
+            P(["A"], "value", ""),
+            pd.DataFrame({"A": [1, 2, np.nan]}),
         )
 
     def test_fill_all_empty_column(self):
@@ -181,6 +186,7 @@ class TestRender(unittest.TestCase):
         )
 
     def test_float_to_float(self):
+        # This also covers "int to float", because Pandas int+null columns are float
         self._test(
             pd.DataFrame({"A": [1.1, 2.2, np.nan]}, dtype=float),
             P(["A"], "value", "3.3"),

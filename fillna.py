@@ -47,10 +47,6 @@ class FillValue(FillWith):
         return series2
 
     def run(self, series: pd.Series) -> pd.Series:
-        if not self.value:
-            # TODO consider letting the user replace NA with '', if wanted
-            return series
-
         if not series.isnull().any():
             return series
 
